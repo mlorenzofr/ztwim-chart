@@ -1,4 +1,4 @@
-{{- if and (eq (.Values.defaultDenyNetworkPolicy.enabled | toString) "true") .Values.networkPolicy.operator.enabled }}
+{{- if and (eq (.Values.defaultDenyNetworkPolicy.enabled | toString) "true") (eq (.Values.networkPolicy.operator.enabled | toString) "true") }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
