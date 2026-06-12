@@ -26,3 +26,98 @@ This chart is used to serve as the template for Validated Patterns Charts
 <!-- markdownlint-enable MD013 MD034 MD060 -->
 
 {{ template "helm-docs.versionFooter" . }}
+
+## Network Policies
+
+This chart supports deploying Kubernetes NetworkPolicies for network isolation
+in the ZTWIM namespace. Two layers are available:
+
+### Default-deny policy
+
+A namespace-wide default-deny NetworkPolicy that blocks all ingress and egress
+traffic for every pod in the namespace unless an explicit allow policy exists.
+Enable it by setting:
+
+```yaml
+defaultDenyNetworkPolicy:
+  enabled: true
+```
+
+**Note:** The spire-agent DaemonSet uses `hostNetwork: true` and is NOT affected
+by NetworkPolicies. Agent-to-server communication uses node IPs and requires a
+port-only ingress rule on the spire-server.
+
+### Per-pod allow rules
+
+When the default-deny policy is enabled, additional NetworkPolicy templates
+allow defining fine-grained rules for each component:
+
+- `networkPolicy.spireServer` — ingress and egress rules for the spire-server
+  pod (includes the spire-controller-manager webhook container)
+- `networkPolicy.oidcDiscoveryProvider` — ingress and egress rules for the OIDC
+  discovery provider pod
+- `networkPolicy.csiDriver` — egress rules for the SPIFFE CSI driver pods
+- `networkPolicy.operator` — ingress and egress rules for the ZTWIM operator pod
+
+Example — allow spire-server ingress from agents and egress to DNS:
+
+```yaml
+defaultDenyNetworkPolicy:
+  enabled: true
+
+networkPolicy:
+  spireServer:
+    enabled: true
+    ingress:
+      - ports:
+        - protocol: TCP
+          port: 8081
+      - ports:
+        - protocol: TCP
+          port: 9443
+    egress:
+      - ports:
+        - protocol: UDP
+          port: 5353
+        - protocol: TCP
+          port: 5353
+        to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+      - ports:
+        - protocol: TCP
+          port: 6443
+  oidcDiscoveryProvider:
+    enabled: true
+    ingress:
+      - ports:
+        - protocol: TCP
+          port: 8443
+        from:
+        - namespaceSelector:
+            matchLabels:
+              policy-group.network.openshift.io/ingress: ""
+    egress:
+      - ports:
+        - protocol: UDP
+          port: 5353
+        - protocol: TCP
+          port: 5353
+        to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-dns
+  operator:
+    enabled: true
+    egress:
+      - ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 6443
+```
+
+Patterns can supply these values via `extraValueFiles` in their
+`values-hub.yaml` to keep network policy configuration separate from the main
+chart values.

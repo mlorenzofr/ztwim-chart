@@ -2,6 +2,32 @@ global:
   localClusterDomain: local.example.com
   hubClusterDomain: hub.example.com
 
+# -- Default-deny NetworkPolicy for the ZTWIM namespace.
+# When enabled, deploys a namespace-wide NetworkPolicy that blocks all ingress and egress
+# for pods without an explicit allow policy. Note: spire-agent uses hostNetwork and is
+# NOT affected by NetworkPolicies.
+defaultDenyNetworkPolicy:
+  enabled: false
+
+# -- Per-pod NetworkPolicy rules for SPIRE components and the ZTWIM operator.
+# Only effective when defaultDenyNetworkPolicy is enabled.
+networkPolicy:
+  spireServer:
+    enabled: false
+    ingress: []
+    egress: []
+  oidcDiscoveryProvider:
+    enabled: false
+    ingress: []
+    egress: []
+  csiDriver:
+    enabled: false
+    egress: []
+  operator:
+    enabled: false
+    ingress: []
+    egress: []
+
 spiffe:
   csi:
     agentSocketPath: "/run/spire/agent-sockets"
