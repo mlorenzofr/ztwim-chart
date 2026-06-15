@@ -1,0 +1,22 @@
+{{- if and (eq (.Values.defaultDenyNetworkPolicy.enabled | toString) "true") (eq (.Values.networkPolicy.oidcDiscoveryProvider.enabled | toString) "true") }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: oidc-discovery-provider-network-policy
+  namespace: {{ .Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: spiffe-oidc-discovery-provider
+  policyTypes:
+  - Ingress
+  - Egress
+  {{- with .Values.networkPolicy.oidcDiscoveryProvider.ingress }}
+  ingress:
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- with .Values.networkPolicy.oidcDiscoveryProvider.egress }}
+  egress:
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+{{- end }}
